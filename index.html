@@ -1,0 +1,596 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel AI Generator</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #171923;
+  color: #f4f4f5;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+header {
+  padding: 28px 12px;
+  background: #222638;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 25px;
+}
+
+header p {
+  color: #aeb5c9;
+  font-size: 13px;
+}
+
+main {
+  max-width: 650px;
+  margin: 30px auto;
+  padding: 15px;
+}
+
+input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #444c65;
+  border-radius: 9px;
+  background: #252b3d;
+  color: white;
+  font-size: 16px;
+}
+
+button {
+  margin-top: 13px;
+  padding: 13px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #7865ec;
+  color: white;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #9485ff;
+}
+
+.result {
+  margin-top: 25px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #222638;
+}
+
+canvas {
+  width: min(100%, 420px);
+  height: auto;
+  image-rendering: pixelated;
+  background: #d9e7f5;
+  border: 5px solid #454e68;
+  border-radius: 5px;
+}
+
+#status {
+  margin: 15px 0;
+  color: #aeb5c9;
+  font-size: 13px;
+}
+
+#analysis {
+  text-align: left;
+  padding: 12px;
+  background: #171923;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.download {
+  background: #238b70;
+}
+
+footer {
+  padding: 25px;
+  color: #777f96;
+  font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PIXEL AI GENERATOR</h1>
+  <p>言葉からドット絵を生成するAI</p>
+</header>
+
+<main>
+
+  <h2>何を描きますか？</h2>
+
+  <input
+    id="prompt"
+    type="text"
+    placeholder="例：ジョウロを持つ男の人"
+    maxlength="100"
+  >
+
+  <button onclick="generate()">
+    ドット絵を生成
+  </button>
+
+  <div class="result">
+
+    <h3>GENERATED IMAGE</h3>
+
+    <canvas id="canvas"
+      width="32"
+      height="32">
+    </canvas>
+
+    <p id="status">生成待機中...</p>
+
+    <div id="analysis">
+      AI解析結果：まだ解析されていません。
+    </div>
+
+    <button class="download"
+      onclick="downloadImage()">
+      画像を保存
+    </button>
+
+  </div>
+
+</main>
+
+<footer>
+  PIXEL AI GENERATOR - Prototype v1.0
+</footer>
+
+<script>
+
+// =====================================
+// 1. 独自AI解析エンジン
+// =====================================
+
+const AI = {
+
+  dictionaries: {
+
+    person: [
+      "人", "男", "女", "男性", "女性",
+      "少年", "少女", "男の子", "女の子",
+      "人間", "勇者", "騎士", "魔法使い"
+    ],
+
+    wateringCan: [
+      "ジョウロ", "じょうろ", "水差し"
+    ],
+
+    plant: [
+      "花", "植物", "草", "木", "花壇"
+    ],
+
+    cat: [
+      "猫", "ねこ", "ネコ"
+    ],
+
+    dog: [
+      "犬", "いぬ", "イヌ"
+    ],
+
+    sword: [
+      "剣", "刀", "ソード"
+    ],
+
+    house: [
+      "家", "小屋", "建物"
+    ],
+
+    sun: [
+      "太陽", "日差し", "晴れ"
+    ],
+
+    hat: [
+      "帽子", "キャップ"
+    ]
+  },
+
+  analyze(text) {
+
+    const result = {
+      person: false,
+      wateringCan: false,
+      plant: false,
+      cat: false,
+      dog: false,
+      sword: false,
+      house: false,
+      sun: false,
+      hat: false,
+      gender: "unknown",
+      action: "normal"
+    };
+
+    // 単語の意味を判定
+    for (const category in this.dictionaries) {
+
+      if (this.dictionaries[category].some(
+        word => text.includes(word)
+      )) {
+        result[category] = true;
+      }
+    }
+
+    // 人物の判定
+    if (
+      text.includes("人") ||
+      text.includes("男") ||
+      text.includes("女") ||
+      text.includes("勇者") ||
+      text.includes("騎士") ||
+      text.includes("魔法使い")
+    ) {
+      result.person = true;
+    }
+
+    // 性別の判定
+    if (
+      text.includes("男") ||
+      text.includes("男性") ||
+      text.includes("少年")
+    ) {
+      result.gender = "male";
+    }
+
+    if (
+      text.includes("女") ||
+      text.includes("女性") ||
+      text.includes("少女")
+    ) {
+      result.gender = "female";
+    }
+
+    // 動作の判定
+    if (
+      text.includes("持つ") ||
+      text.includes("持って") ||
+      text.includes("持った")
+    ) {
+      result.action = "holding";
+    }
+
+    return result;
+  }
+};
+
+
+// =====================================
+// 2. ドット絵描画エンジン
+// =====================================
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const SIZE = 32;
+
+const COLORS = {
+  sky: "#d9e7f5",
+  ground: "#78a96b",
+  skin: "#f2c69c",
+  hair: "#44302b",
+  shirt: "#4778bd",
+  pants: "#35445e",
+  shoes: "#43342e",
+  metal: "#aab4c4",
+  water: "#4aa9ec",
+  plant: "#39804a",
+  flower: "#e9b6d4",
+  red: "#d95c5c",
+  black: "#25252b",
+  white: "#ffffff",
+  roof: "#a85e53"
+};
+
+// 1ドット単位で描画
+function pixel(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, 1, 1);
+}
+
+// 複数ドットをまとめて描画
+function block(x, y, width, height, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, width, height);
+}
+
+// 背景
+function drawBackground() {
+
+  block(0, 0, 32, 32, COLORS.sky);
+
+  // 雲
+  block(3, 5, 6, 2, COLORS.white);
+  block(5, 4, 3, 1, COLORS.white);
+
+  block(22, 7, 6, 2, COLORS.white);
+  block(24, 6, 3, 1, COLORS.white);
+
+  // 地面
+  block(0, 25, 32, 7, COLORS.ground);
+
+  // 地面の模様
+  pixel(5, 28, "#a0c17e");
+  pixel(12, 30, "#a0c17e");
+  pixel(25, 27, "#a0c17e");
+}
+
+// 人物
+function drawPerson(gender, hasHat) {
+
+  // 髪
+  block(12, 7, 8, 5, COLORS.hair);
+
+  // 顔
+  block(13, 9, 6, 6, COLORS.skin);
+
+  // 髪の形
+  if (gender === "female") {
+    block(11, 10, 2, 7, COLORS.hair);
+    block(19, 10, 2, 7, COLORS.hair);
+  }
+
+  // 目
+  pixel(14, 12, COLORS.black);
+  pixel(18, 12, COLORS.black);
+
+  // 帽子
+  if (hasHat) {
+    block(11, 6, 10, 2, COLORS.red);
+    block(13, 4, 7, 2, COLORS.red);
+  }
+
+  // 体
+  block(12, 15, 8, 7, COLORS.shirt);
+
+  // 腕
+  block(10, 16, 2, 5, COLORS.skin);
+  block(20, 16, 2, 5, COLORS.skin);
+
+  // 足
+  block(13, 22, 3, 5, COLORS.pants);
+  block(17, 22, 3, 5, COLORS.pants);
+
+  // 靴
+  block(12, 27, 4, 2, COLORS.shoes);
+  block(17, 27, 4, 2, COLORS.shoes);
+}
+
+// ジョウロ
+function drawWateringCan() {
+
+  // 持ち手
+  block(21, 15, 3, 1, COLORS.metal);
+  pixel(21, 16, COLORS.metal);
+
+  // 本体
+  block(22, 17, 6, 4, COLORS.metal);
+
+  // 水色の部分
+  block(23, 18, 4, 2, COLORS.water);
+
+  // 注ぎ口
+  block(28, 18, 3, 1, COLORS.metal);
+  pixel(30, 19, COLORS.metal);
+
+  // 水滴
+  pixel(30, 21, COLORS.water);
+  pixel(29, 23, COLORS.water);
+}
+
+// 植物
+function drawPlant() {
+
+  block(5, 23, 2, 5, COLORS.plant);
+  block(3, 21, 3, 2, COLORS.plant);
+  block(7, 20, 3, 2, COLORS.plant);
+
+  // 花
+  pixel(5, 19, COLORS.flower);
+  pixel(6, 18, COLORS.flower);
+  pixel(7, 19, COLORS.flower);
+  pixel(6, 20, COLORS.flower);
+
+  // 茎
+  block(6, 20, 1, 6, COLORS.plant);
+}
+
+// 猫
+function drawCat() {
+
+  block(24, 20, 5, 5, "#d9a36c");
+
+  // 耳
+  pixel(24, 19, "#d9a36c");
+  pixel(28, 19, "#d9a36c");
+
+  // 顔
+  pixel(25, 21, COLORS.black);
+  pixel(27, 21, COLORS.black);
+
+  // しっぽ
+  block(29, 22, 2, 1, "#d9a36c");
+}
+
+// 犬
+function drawDog() {
+
+  block(23, 21, 7, 4, "#b27a4d");
+  block(23, 19, 4, 3, "#b27a4d");
+
+  pixel(24, 20, COLORS.black);
+  pixel(26, 20, COLORS.black);
+
+  block(29, 20, 2, 1, "#b27a4d");
+}
+
+// 剣
+function drawSword() {
+
+  block(22, 10, 1, 10, COLORS.metal);
+  block(20, 15, 5, 1, COLORS.red);
+  block(22, 20, 1, 3, COLORS.hair);
+}
+
+// 家
+function drawHouse() {
+
+  block(2, 13, 9, 11, "#e9c18c");
+
+  // 屋根
+  block(1, 12, 11, 2, COLORS.roof);
+  block(3, 10, 7, 2, COLORS.roof);
+  block(5, 8, 3, 2, COLORS.roof);
+
+  // 窓
+  block(4, 16, 2, 3, COLORS.water);
+
+  // ドア
+  block(8, 18, 2, 6, COLORS.hair);
+}
+
+// 太陽
+function drawSun() {
+
+  block(26, 2, 4, 4, "#f6d36c");
+  pixel(27, 1, "#f6d36c");
+  pixel(28, 1, "#f6d36c");
+  pixel(25, 3, "#f6d36c");
+  pixel(30, 3, "#f6d36c");
+}
+
+
+// =====================================
+// 3. AI生成処理
+// =====================================
+
+function generate() {
+
+  const text = document.getElementById("prompt").value.trim();
+
+  if (!text) {
+    alert("描きたい内容を入力してください。");
+    return;
+  }
+
+  document.getElementById("status").textContent =
+    "AIが言葉の意味を解析しています...";
+
+  const result = AI.analyze(text);
+
+  // 描画
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  drawBackground();
+  drawSun();
+
+  if (result.house) {
+    drawHouse();
+  }
+
+  if (result.person) {
+    drawPerson(result.gender, result.hat);
+  }
+
+  if (result.wateringCan) {
+    drawWateringCan();
+  }
+
+  if (result.plant) {
+    drawPlant();
+  }
+
+  if (result.cat) {
+    drawCat();
+  }
+
+  if (result.dog) {
+    drawDog();
+  }
+
+  if (result.sword) {
+    drawSword();
+  }
+
+  // 解析結果を表示
+  const detected = [];
+
+  for (const key in result) {
+    if (result[key] === true) {
+      detected.push(key);
+    }
+  }
+
+  document.getElementById("analysis").innerHTML =
+    "<strong>AI解析結果</strong><br>" +
+    "入力文：" + escapeHTML(text) + "<br>" +
+    "認識した要素：" +
+    (detected.join(" / ") || "未知の要素") +
+    "<br>人物の種類：" + result.gender +
+    "<br>動作：" + result.action;
+
+  document.getElementById("status").textContent =
+    "ドット絵の生成が完了しました！";
+}
+
+// HTML表示用の文字列処理
+function escapeHTML(str) {
+  return str.replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+// =====================================
+// 4. 画像保存
+// =====================================
+
+function downloadImage() {
+
+  const link = document.createElement("a");
+
+  link.download = "pixel-art.png";
+  link.href = canvas.toDataURL("image/png");
+
+  link.click();
+}
+
+// Enterキーでも生成
+document.getElementById("prompt").addEventListener(
+  "keydown",
+  function(event) {
+    if (event.key === "Enter") {
+      generate();
+    }
+  }
+);
+
+</script>
+
+</body>
+</html>
