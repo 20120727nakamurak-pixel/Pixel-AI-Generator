@@ -3,85 +3,83 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PIXEL AI GENERATOR v2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIXEL AI GENERATOR v3.0</title>
 
 <style>
 * { box-sizing:border-box; }
 
 body {
   margin:0;
-  background:#171b28;
+  background:#141925;
   color:#f4f5fa;
   font-family:sans-serif;
   text-align:center;
 }
 
 header {
-  padding:25px 10px;
-  background:#252c40;
+  padding:26px 12px;
+  background:#222b40;
+  border-bottom:2px solid #414d6b;
 }
 
-h1 { font-size:25px; margin:0; }
+h1 { margin:0; font-size:25px; letter-spacing:2px; }
 
-header p {
-  color:#aeb8ce;
-  font-size:13px;
-}
+header p { color:#aebbd2; font-size:13px; }
 
 main {
-  max-width:650px;
+  max-width:750px;
   margin:25px auto;
-  padding:15px;
+  padding:14px;
 }
 
 input {
   width:100%;
   padding:16px;
-  border:2px solid #48536e;
+  border:2px solid #485675;
   border-radius:9px;
-  background:#242c40;
+  background:#222b40;
   color:white;
   font-size:16px;
 }
 
 button {
-  padding:13px 25px;
-  margin:10px 4px;
+  padding:13px 24px;
+  margin:9px 4px;
   border:0;
   border-radius:8px;
   background:#7865ed;
   color:white;
-  font-size:14px;
   font-weight:bold;
   cursor:pointer;
 }
 
-button:hover { opacity:.8; }
+button:hover { filter:brightness(1.15); }
 
 .panel {
   margin-top:20px;
-  padding:20px;
-  background:#252c40;
+  padding:18px;
+  background:#222b40;
   border-radius:12px;
 }
 
 canvas {
-  width:min(100%,480px);
+  width:min(100%,512px);
   height:auto;
   image-rendering:pixelated;
-  border:5px solid #48536e;
-  background:#b7d8ed;
+  border:5px solid #53617e;
+  background:#9cc8e2;
 }
 
 #status {
-  color:#aeb8ce;
+  color:#b8c4da;
   font-size:13px;
+  min-height:20px;
 }
 
 #analysis {
   padding:14px;
-  background:#171b28;
+  background:#151b29;
   border-radius:8px;
   text-align:left;
   font-size:13px;
@@ -90,10 +88,25 @@ canvas {
 }
 
 .download { background:#218b70; }
+.clear { background:#59667d; }
+
+.examples {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:6px;
+  margin-top:14px;
+}
+
+.examples button {
+  background:#37435e;
+  font-size:12px;
+  padding:9px 12px;
+}
 
 footer {
   padding:25px;
-  color:#75809b;
+  color:#78849d;
   font-size:12px;
 }
 </style>
@@ -102,622 +115,1170 @@ footer {
 <body>
 
 <header>
-<h1>PIXEL AI GENERATOR</h1>
-<p>Words into Pixel Art / v2.0</p>
+  <h1>PIXEL AI GENERATOR</h1>
+  <p>Advanced Language Analysis & Pixel Art Engine v3.0</p>
 </header>
 
 <main>
 
-<h2>何を描きますか？</h2>
+  <h2>描きたいものを入力してください</h2>
 
-<input id="prompt"
-placeholder="例：リンゴを食べるドラゴン"
-maxlength="150">
+  <input id="prompt"
+    placeholder="例：リンゴを食べる巨大な赤いドラゴン"
+    maxlength="200">
 
-<button onclick="generate()">AI生成開始</button>
+  <button onclick="generate()">AI生成開始</button>
+  <button class="clear" onclick="clearCanvas()">リセット</button>
 
-<div class="panel">
+  <div class="examples">
+    <button onclick="example('リンゴを食べる巨大な赤いドラゴン')">ドラゴン</button>
+    <button onclick="example('森を歩く白い猫')">白い猫</button>
+    <button onclick="example('剣を持つ勇者と巨大な城')">勇者と城</button>
+    <button onclick="example('夜空を飛ぶ金色の鳥')">金色の鳥</button>
+    <button onclick="example('海を泳ぐ青い魚')">青い魚</button>
+  </div>
 
-<h3>GENERATED PIXEL ART</h3>
+  <div class="panel">
 
-<canvas id="canvas" width="64" height="64"></canvas>
+    <h3>GENERATED PIXEL ART</h3>
 
-<p id="status">入力待機中...</p>
+    <canvas id="canvas" width="128" height="128"></canvas>
 
-<div id="analysis">
-AI解析結果：待機中
-</div>
+    <p id="status">生成待機中...</p>
 
-<button class="download" onclick="downloadImage()">
-PNG画像を保存
-</button>
+    <div id="analysis">
+      AI解析エンジン：待機中
+    </div>
 
-</div>
+    <button class="download" onclick="downloadImage()">
+      PNG画像を保存
+    </button>
+
+  </div>
+
 </main>
 
 <footer>
-PIXEL AI GENERATOR v2.0
+  PIXEL AI GENERATOR v3.0
 </footer>
 
 <script>
 
-// ==========================================
-// 1. 独自AI・意味解析エンジン
-// ==========================================
+// ==================================================
+// 1. 独自AI・言語解析辞書
+// ==================================================
 
 const AI = {
 
-dictionary: {
+  dictionary: {
 
-dragon:["ドラゴン","竜","龍","りゅう"],
-apple:["リンゴ","りんご","林檎","アップル"],
-cat:["猫","ねこ","ネコ"],
-dog:["犬","いぬ","イヌ"],
-person:["人","男","女","男性","女性","少年","少女","騎士","勇者"],
-sword:["剣","刀","ソード"],
-castle:["城","お城","城塞"],
-tree:["木","樹木","大樹"],
-flower:["花","植物","花壇"],
-house:["家","小屋","住宅"],
-bird:["鳥","とり","小鳥"],
-fish:["魚","さかな","魚類"],
-car:["車","自動車","乗用車"]
+    dragon:["ドラゴン","竜","龍","りゅう","ドラゴン族"],
 
-},
+    cat:["猫","ねこ","ネコ","子猫"],
 
-colors: {
-red:["赤い","赤","紅色"],
-blue:["青い","青","蒼い"],
-green:["緑","緑色"],
-white:["白い","白"],
-black:["黒い","黒"],
-yellow:["黄色","黄色い"],
-purple:["紫","紫色"],
-gold:["金色","金","黄金"],
-pink:["ピンク","桃色"]
-},
+    dog:["犬","いぬ","イヌ","子犬"],
 
-verbs: {
-eat:["食べる","食べて","食べ","食った","食べた"],
-hold:["持つ","持って","持った","握る","握って"],
-fly:["飛ぶ","飛んで","飛行する","空を舞う"],
-run:["走る","走って","駆ける","駆けて"],
-sit:["座る","座って","腰掛ける"],
-sleep:["眠る","寝る","寝て"],
-swim:["泳ぐ","泳いで"],
-fight:["戦う","戦って","攻撃する"],
-walk:["歩く","歩いて"]
-},
+    wolf:["狼","オオカミ","おおかみ"],
 
-findCategory(text) {
+    bird:["鳥","とり","小鳥","鷹","ワシ"],
 
-  for (const category in this.dictionary) {
-    for (const word of this.dictionary[category]) {
-      if (text.includes(word)) return category;
+    fish:["魚","さかな","魚類","金魚"],
+
+    person:["人間","人","男","女","男性","女性",
+      "少年","少女","男の子","女の子","勇者",
+      "騎士","戦士","魔法使い","冒険者"],
+
+    apple:["リンゴ","りんご","林檎","アップル"],
+
+    banana:["バナナ"],
+
+    meat:["肉","お肉","ステーキ"],
+
+    sword:["剣","刀","ソード"],
+
+    shield:["盾","シールド"],
+
+    staff:["杖","魔法の杖"],
+
+    watering:["ジョウロ","じょうろ","水差し"],
+
+    house:["家","小屋","住宅","民家"],
+
+    castle:["城","お城","城塞","王城"],
+
+    tree:["木","樹木","大樹","木々"],
+
+    flower:["花","植物","花壇","チューリップ"],
+
+    mushroom:["キノコ","きのこ","茸"],
+
+    mountain:["山","山岳","岩山"],
+
+    cloud:["雲"],
+
+    moon:["月","三日月"],
+
+    sun:["太陽","日","夕日"],
+
+    star:["星","星空","流星"],
+
+    boat:["船","ボート","舟"]
+
+  },
+
+  colors: {
+
+    red:["赤い","赤色","赤","紅色","真っ赤な"],
+
+    blue:["青い","青色","青","蒼い"],
+
+    green:["緑色","緑","緑の"],
+
+    white:["白い","白色","白","真っ白な"],
+
+    black:["黒い","黒色","黒","真っ黒な"],
+
+    yellow:["黄色","黄色い","黄"],
+
+    purple:["紫色","紫","紫の"],
+
+    gold:["金色","黄金","金の"],
+
+    pink:["ピンク","桃色","桃色の"],
+
+    orange:["オレンジ","橙色","橙"],
+
+    brown:["茶色","茶色の"]
+
+  },
+
+  actions: {
+
+    eat:["食べる","食べて","食べた","食べ","食事する","かじる"],
+
+    hold:["持つ","持って","持った","握る","握って","手にする"],
+
+    fly:["飛ぶ","飛んで","飛行する","空を舞う","羽ばたく"],
+
+    run:["走る","走って","駆ける","駆けて"],
+
+    walk:["歩く","歩いて","散歩する","進む"],
+
+    sit:["座る","座って","腰掛ける"],
+
+    sleep:["眠る","寝る","寝て","昼寝する"],
+
+    swim:["泳ぐ","泳いで","水中を進む"],
+
+    fight:["戦う","戦って","攻撃する","戦闘する"],
+
+    water:["水をあげる","水やり","水を与える"],
+
+    look:["見る","眺める","見つめる"],
+
+    carry:["運ぶ","運んで","背負う","背負って"]
+
+  },
+
+  modifiers: {
+
+    giant:["巨大な","大きな","大きい","巨体の","特大の"],
+
+    small:["小さい","小さな","小型の","ちいさな"],
+
+    cute:["かわいい","可愛い","愛らしい"],
+
+    scary:["恐ろしい","怖い","凶暴な","邪悪な"],
+
+    beautiful:["美しい","綺麗な","きれいな","優雅な"],
+
+    old:["古い","古びた","老いた"],
+
+    young:["若い","幼い","子供の"]
+
+  },
+
+  backgrounds: {
+
+    forest:["森","森林","林","森の中"],
+
+    sea:["海","海中","海底","海の中"],
+
+    grass:["草原","野原","平原","草地"],
+
+    night:["夜","夜空","真夜中"],
+
+    desert:["砂漠","砂丘"],
+
+    snow:["雪原","雪山","雪","氷原"],
+
+    city:["街","町","都市"],
+
+    castle:["城","王城","城内"],
+
+    space:["宇宙","星空","銀河"]
+
+  },
+
+  match(text,dict) {
+
+    let found=[];
+
+    for(const key in dict) {
+
+      const words=dict[key];
+
+      const matches=words
+        .filter(w=>text.includes(w))
+        .sort((a,b)=>b.length-a.length);
+
+      if(matches.length) {
+
+        found.push({
+          type:key,
+          word:matches[0],
+          length:matches[0].length
+        });
+
+      }
     }
-  }
 
-  return null;
-},
+    return found;
+  },
 
-findColor(text) {
+  analyze(text) {
 
-  for (const color in this.colors) {
-    for (const word of this.colors[color]) {
-      if (text.includes(word)) return color;
+    const entities=this.match(text,this.dictionary);
+    const colors=this.match(text,this.colors);
+    const actions=this.match(text,this.actions);
+    const modifiers=this.match(text,this.modifiers);
+    const backgrounds=this.match(text,this.backgrounds);
+
+    // 最初の動作を採用
+    const action=actions[0]?.type || "normal";
+
+    // 主体と対象の推定
+    let primary=entities[0] || null;
+    let secondary=entities.slice(1);
+
+    // 「食べる」の対象を優先
+    if(action==="eat") {
+
+      const edible=["apple","banana","meat","fish"];
+
+      const food=entities.find(
+        e=>edible.includes(e.type)
+      );
+
+      const actor=entities.find(
+        e=>!edible.includes(e.type)
+      );
+
+      if(actor) primary=actor;
+
+      secondary=entities.filter(e=>e!==primary);
+
+      if(food && secondary.indexOf(food)<0) {
+        secondary.unshift(food);
+      }
     }
-  }
 
-  return null;
-},
-
-findVerb(text) {
-
-  for (const verb in this.verbs) {
-    for (const word of this.verbs[verb]) {
-      if (text.includes(word)) return verb;
-    }
-  }
-
-  return null;
-},
-
-analyze(text) {
-
-  const subjects = [];
-
-  for (const category in this.dictionary) {
-
-    const matches = this.dictionary[category].filter(
-      word => text.includes(word)
+    // 複数主体の認識
+    const multiple=entities.filter(e=>
+      ["dragon","cat","dog","wolf","bird","person"].includes(e.type)
     );
 
-    if (matches.length) {
-      subjects.push({
-        type:category,
-        word:matches.sort((a,b)=>b.length-a.length)[0]
-      });
-    }
+    // 色の関連付け
+    const color=colors[0]?.type || null;
+
+    // 背景の判定
+    const background=backgrounds[0]?.type || "grass";
+
+    // 動作対象の推定
+    const target=secondary[0] || null;
+
+    return {
+
+      original:text,
+      entities,
+      primary,
+      secondary,
+      multiple,
+      action,
+      target,
+      color,
+      backgrounds,
+      background,
+      modifiers,
+
+      size:modifiers.some(m=>m.type==="giant")?1.15:
+           modifiers.some(m=>m.type==="small")?0.75:1,
+
+      mood:modifiers.some(m=>m.type==="cute")?"cute":
+           modifiers.some(m=>m.type==="scary")?"scary":"normal"
+
+    };
   }
-
-  // 色を対象物に割り当てる簡易処理
-  const color = this.findColor(text);
-  const verb = this.findVerb(text);
-
-  let subject = subjects[0] || null;
-  let object = subjects[1] || null;
-
-  // 食べる場合は動作主と食べ物を優先
-  if (verb === "eat") {
-
-    const edible = subjects.find(
-      item => item.type === "apple"
-    );
-
-    const actor = subjects.find(
-      item => item.type !== "apple"
-    );
-
-    subject = actor || subject;
-    object = edible || object;
-  }
-
-  return {
-    subjects,
-    subject,
-    object,
-    verb,
-    color
-  };
-}
 
 };
 
 
-// ==========================================
-// 2. 描画エンジン
-// ==========================================
+// ==================================================
+// 2. 128×128描画エンジン
+// ==================================================
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
 
-const C = {
+const PALETTE={
 
-sky:"#a9d3ed",
-skyLight:"#d9edfa",
-ground:"#719e53",
-groundLight:"#91b968",
-dark:"#26313a",
-white:"#ffffff",
-black:"#171b20",
-red:"#d74439",
-redLight:"#fa7860",
-redDark:"#8d2929",
-green:"#39834b",
-greenLight:"#6dbb63",
-greenDark:"#235536",
-blue:"#427ebd",
-blueLight:"#83c1e8",
-brown:"#85533a",
-brownDark:"#523527",
-skin:"#efc29b",
-gold:"#e8b84f",
-gray:"#8799a8",
-grayLight:"#c0ccd5"
+  red:["#8d282c","#c83c40","#ed6660","#ffaaa0"],
+  blue:["#24446f","#3977aa","#65b3d9","#a4def2"],
+  green:["#244e35","#347c47","#62ad5d","#a1d47b"],
+  white:["#798b9b","#c5d1da","#edf2f4","#ffffff"],
+  black:["#171b27","#343e4c","#586579","#8492a2"],
+  yellow:["#927029","#d2a83d","#f0d36c","#fff0a0"],
+  purple:["#47305f","#7652a0","#a67bc9","#d7b6ed"],
+  gold:["#80551e","#bd8a32","#e7bd57","#ffe9a0"],
+  pink:["#86415e","#c46c94","#eb9fbe","#ffd2df"],
+  orange:["#8c4625","#c76b35","#ef9c4d","#ffd08a"],
+  brown:["#51352a","#87573b","#b68157","#dfb58a"]
+
 };
 
-const palettes = {
+function P(x,y,color,w=1,h=1) {
 
-red:{
-main:"#d74439",light:"#fa7860",dark:"#8d2929"
-},
-blue:{
-main:"#427ebd",light:"#83c1e8",dark:"#244d83"
-},
-green:{
-main:"#39834b",light:"#6dbb63",dark:"#235536"
-},
-white:{
-main:"#dce4e9",light:"#ffffff",dark:"#9daebc"
-},
-black:{
-main:"#39404b",light:"#707985",dark:"#20242c"
-},
-yellow:{
-main:"#d5ad35",light:"#f6dd72",dark:"#987329"
-},
-purple:{
-main:"#7953ad",light:"#b28ce0",dark:"#49306d"
-},
-gold:{
-main:"#d5a638",light:"#ffe28a",dark:"#8d6424"
-},
-pink:{
-main:"#d879a0",light:"#f5b3ce",dark:"#984565"
-}
-};
-
-function px(x,y,color,w=1,h=1) {
   ctx.fillStyle=color;
-  ctx.fillRect(x,y,w,h);
-}
+  ctx.fillRect(
+    Math.round(x),
+    Math.round(y),
+    Math.round(w),
+    Math.round(h)
+  );
 
-function rect(x,y,w,h,color) {
-  px(x,y,color,w,h);
 }
 
 function line(x1,y1,x2,y2,color) {
+
   ctx.strokeStyle=color;
   ctx.lineWidth=1;
+
   ctx.beginPath();
   ctx.moveTo(x1+.5,y1+.5);
   ctx.lineTo(x2+.5,y2+.5);
   ctx.stroke();
+
 }
 
-// ==========================================
-// 3. 背景
-// ==========================================
+function palette(color) {
 
-function drawBackground() {
+  return PALETTE[color] || PALETTE.green;
 
-  rect(0,0,64,64,C.sky);
-
-  // 空のグラデーション風装飾
-  rect(0,0,64,17,C.skyLight);
-
-  // 雲
-  rect(6,9,11,3,C.white);
-  rect(9,7,5,2,C.white);
-  rect(40,12,12,3,C.white);
-  rect(43,10,6,2,C.white);
-
-  // 太陽
-  rect(49,3,7,7,"#f6d36c");
-  px(48,5,"#f6d36c");
-  px(57,5,"#f6d36c");
-  px(52,2,"#f6d36c");
-
-  // 地面
-  rect(0,49,64,15,C.ground);
-  rect(0,49,64,2,C.groundLight);
-
-  // 草
-  for(let i=0;i<15;i++) {
-    const x=(i*17+5)%64;
-    const y=52+(i*7)%10;
-    px(x,y,C.groundLight);
-    px(x+1,y+1,C.green);
-  }
-
-  // 石
-  rect(8,57,4,2,"#9ba78b");
-  rect(49,54,3,2,"#9ba78b");
 }
 
-// ==========================================
-// 4. ドラゴン描画
-// ==========================================
 
-function drawDragon(colorName="green",action="normal") {
+// ==================================================
+// 3. 背景生成
+// ==================================================
 
-  const p=palettes[colorName] || palettes.green;
+function drawBackground(type) {
 
-  // 尻尾
-  rect(13,39,8,4,p.dark);
-  rect(7,41,8,2,p.main);
-  rect(4,40,4,4,p.dark);
-  px(3,39,p.light);
-  px(3,44,p.main);
+  const backgrounds={
 
-  // 翼の外側
-  rect(21,17,4,15,p.dark);
-  rect(25,20,5,10,p.main);
-  rect(29,25,4,8,p.dark);
+    grass:{
+      sky:"#9bcee9",
+      ground:"#638f4b",
+      detail:"#9bc66b"
+    },
 
-  // 翼の膜
-  rect(24,23,5,3,p.light);
-  rect(28,28,5,3,p.light);
-  line(23,20,30,31,p.dark);
-  line(25,23,31,29,p.dark);
+    forest:{
+      sky:"#789f9b",
+      ground:"#31583d",
+      detail:"#56884b"
+    },
 
-  // 反対側の翼
-  rect(36,18,5,12,p.dark);
-  rect(40,21,5,9,p.main);
-  rect(44,27,4,5,p.dark);
-  line(38,20,45,31,p.dark);
+    sea:{
+      sky:"#4d9cc5",
+      ground:"#286c9c",
+      detail:"#65c2dc"
+    },
 
-  // 胴体
-  rect(22,30,19,15,p.dark);
-  rect(23,29,16,13,p.main);
-  rect(25,31,11,10,p.light);
+    night:{
+      sky:"#171e42",
+      ground:"#30334f",
+      detail:"#7479a0"
+    },
 
-  // お腹
-  rect(28,34,9,8,"#b8c98b");
-  rect(29,35,7,1,"#d6dba5");
-  rect(29,38,7,1,"#d6dba5");
+    desert:{
+      sky:"#e9b879",
+      ground:"#bd8b4e",
+      detail:"#e2b56e"
+    },
 
-  // 足
-  rect(23,42,6,7,p.dark);
-  rect(25,44,4,5,p.main);
-  rect(35,42,6,7,p.dark);
-  rect(36,44,4,5,p.main);
+    snow:{
+      sky:"#a9cce6",
+      ground:"#d7e5ed",
+      detail:"#ffffff"
+    },
 
-  // 爪
-  px(25,48,C.white);
-  px(28,48,C.white);
-  px(37,48,C.white);
-  px(40,48,C.white);
+    city:{
+      sky:"#9bb5cb",
+      ground:"#626c78",
+      detail:"#9ca8b2"
+    },
 
-  // 首
-  rect(37,22,10,15,p.dark);
-  rect(39,23,8,13,p.main);
-  rect(40,24,5,9,p.light);
+    castle:{
+      sky:"#9ab8d4",
+      ground:"#607d58",
+      detail:"#94ad78"
+    },
 
-  // 頭
-  rect(42,14,12,12,p.dark);
-  rect(43,13,10,12,p.main);
-  rect(45,12,7,11,p.light);
+    space:{
+      sky:"#11132d",
+      ground:"#262747",
+      detail:"#44436c"
+    }
 
-  // 角
-  rect(44,9,2,5,p.dark);
-  px(43,8,C.grayLight);
-  rect(51,10,2,4,p.dark);
-  px(52,9,C.grayLight);
+  };
 
-  // 鼻先
-  rect(51,20,8,5,p.dark);
-  rect(52,19,6,4,p.main);
+  const b=backgrounds[type] || backgrounds.grass;
 
-  // 鼻の穴
-  px(55,20,C.dark);
+  P(0,0, b.sky,128,128);
 
-  // 目
-  px(49,16,C.white);
-  px(50,16,C.black);
-  px(50,17,C.black);
+  // 背景の光
+  if(type==="night" || type==="space") {
 
-  // 鱗
-  const scales=[
-    [25,30],[29,28],[33,30],
-    [36,34],[31,37],[26,39],
-    [38,38],[41,27],[46,24]
-  ];
+    for(let i=0;i<45;i++) {
 
-  scales.forEach(([x,y])=>{
-    px(x,y,p.light);
-    px(x+1,y,p.dark);
-  });
+      const x=(i*37+11)%128;
+      const y=(i*23+7)%80;
 
-  // 食べる動作
-  if(action==="eat") {
+      P(x,y,i%4===0?"#f9e9a0":"#c5d8ed");
 
-    // 口
-    rect(53,23,6,2,C.black);
-    px(54,25,C.red);
+    }
 
-    // リンゴを口元に描く
-    drawApple(56,22,0.75);
+    if(type==="night") {
+      P(96,12,"#f5e6a3",12,12);
+      P(92,10,b.sky,12,12);
+    }
 
   } else {
 
-    // 通常の口
-    line(53,23,57,23,C.dark);
+    // 雲
+    P(12,15,"#e8f3f7",18,4);
+    P(17,12,"#ffffff",9,3);
+    P(84,23,"#e8f3f7",22,4);
+    P(89,20,"#ffffff",10,3);
+
+    // 太陽
+    P(104,8,"#f5d875",12,12);
+    P(107,6,"#fff0a0",6,2);
+
   }
 
-  // 鱗の追加装飾
-  for(let i=0;i<5;i++) {
-    px(25+i*3,33+(i%2)*2,p.dark);
+  // 地面
+  P(0,93,b.ground,128,35);
+  P(0,93,b.detail,128,3);
+
+  // 地面模様
+  for(let i=0;i<35;i++) {
+
+    const x=(i*31+7)%128;
+    const y=98+(i*17)%27;
+
+    P(x,y,b.detail,2,1);
+
   }
+
+  // 背景オブジェクト
+  if(type==="forest") {
+
+    drawBackgroundTree(8,45);
+    drawBackgroundTree(102,42);
+
+  }
+
+  if(type==="desert") {
+
+    P(10,83,"#e8c17e",30,5);
+    P(82,76,"#e8c17e",38,7);
+
+  }
+
+  if(type==="sea") {
+
+    for(let i=0;i<8;i++) {
+
+      P(i*19,103+(i%3)*5,"#5ab7d1",9,1);
+
+    }
+
+  }
+
+  if(type==="city") {
+
+    P(4,55,"#6e778b",17,38);
+    P(27,42,"#7d879a",20,51);
+    P(83,54,"#707d91",18,39);
+    P(106,46,"#818b9d",18,47);
+
+  }
+
+  if(type==="castle") {
+
+    P(4,50,"#8795a5",22,43);
+    P(102,50,"#8795a5",22,43);
+
+  }
+
 }
 
-// ==========================================
-// 5. リンゴ描画
-// ==========================================
+function drawBackgroundTree(x,y) {
 
-function drawApple(x,y,scale=1) {
+  P(x+8,y+18,"#65432f",7,30);
+  P(x,y+4,"#234f38",23,22);
+  P(x+5,y,"#38754b",15,24);
+  P(x+8,y+5,"#65a85b",8,8);
 
-  const s=Math.max(1,Math.round(scale));
-
-  rect(x,y,2*s,s,C.green);
-  rect(x-2*s,y+s,7*s,5*s,C.redDark);
-  rect(x-s,y+2*s,7*s,4*s,C.red);
-  rect(x,y+2*s,3*s,3*s,C.redLight);
-  rect(x+4*s,y+3*s,s,2*s,C.redDark);
-
-  px(x+2*s,y,C.brown);
 }
 
-// ==========================================
-// 6. 猫・犬
-// ==========================================
 
-function drawCat(colorName="white") {
+// ==================================================
+// 4. ドラゴン
+// ==================================================
 
-  const p=palettes[colorName] || palettes.white;
+function drawDragon(color="green",action="normal",mood="normal") {
+
+  const c=palette(color);
 
   // 尻尾
-  rect(13,39,3,9,p.dark);
-  rect(12,38,3,3,p.main);
+  P(13,73,c[0],25,8);
+  P(5,76,c[1],12,5);
+  P(2,73,c[0],7,9);
+  P(3,71,c[3],3,3);
 
-  // 体
-  rect(19,34,19,13,p.dark);
-  rect(20,34,16,11,p.main);
-  rect(23,36,9,6,p.light);
+  // 翼・左
+  P(19,24,c[0],21,37);
+  P(12,32,c[1],13,23);
+  P(8,44,c[0],12,15);
+  P(8,58,c[1],18,5);
+
+  line(21,27,12,57,c[3]);
+  line(24,30,19,58,c[3]);
+  line(29,31,27,57,c[3]);
+
+  // 翼・右
+  P(55,23,c[0],18,37);
+  P(65,30,c[1],13,23);
+  P(73,43,c[0],11,15);
+  P(60,56,c[1],19,5);
+
+  line(58,27,69,57,c[3]);
+  line(63,30,76,57,c[3]);
+  line(68,33,80,55,c[3]);
+
+  // 翼の爪
+  P(9,56,c[0],5,6);
+  P(76,55,c[0],5,7);
+
+  // 胴体
+  P(23,51,c[0],45,34);
+  P(27,49,c[1],36,31);
+  P(32,54,c[2],25,24);
+
+  // 腹部
+  P(35,58,"#a4b982",19,22);
+  P(36,62,"#c6d49b",16,2);
+  P(36,68,"#c6d49b",16,2);
+  P(36,74,"#c6d49b",16,2);
+
+  // 足
+  P(27,78,c[0],13,17);
+  P(30,82,c[1],8,12);
+  P(54,78,c[0],13,17);
+  P(57,82,c[1],8,12);
+
+  // 爪
+  P(29,94,"#e4e4d0",4,3);
+  P(36,94,"#e4e4d0",4,3);
+  P(56,94,"#e4e4d0",4,3);
+  P(63,94,"#e4e4d0",4,3);
+
+  // 首
+  P(57,36,c[0],19,29);
+  P(61,34,c[1],14,27);
+  P(64,40,c[2],8,18);
 
   // 頭
-  rect(18,20,20,17,p.dark);
-  rect(19,19,18,16,p.main);
+  P(57,17,c[0],31,26);
+  P(60,14,c[1],25,25);
+  P(64,12,c[2],17,19);
+
+  // 角
+  P(62,6,c[0],6,11);
+  P(61,3,c[3],3,5);
+  P(78,7,c[0],5,10);
+  P(80,4,c[3],3,5);
+
+  // 鼻先
+  P(80,29,c[0],17,9);
+  P(84,28,c[1],13,7);
+
+  // 目
+  P(78,20,"#ffffff",6,6);
+  P(80,21,"#171b22",3,4);
+  P(81,21,"#ffffff",1,1);
+
+  // 鼻孔
+  P(91,31,c[0],2,2);
+  P(95,31,c[0],2,2);
+
+  // 鱗模様
+  for(let i=0;i<22;i++) {
+
+    const x=28+(i*13)%37;
+    const y=53+(i*7)%25;
+
+    P(x,y,c[3],2,1);
+    P(x+1,y+1,c[0],1,1);
+
+  }
+
+  // 首のトゲ
+  for(let i=0;i<6;i++) {
+
+    P(63+i*4,10-i%2*2,c[0],3,5);
+
+  }
+
+  // 口
+  P(87,35,"#291c20",9,2);
+
+  if(action==="eat") {
+
+    drawApple(94,32,0.8);
+
+  }
+
+  if(action==="fly") {
+
+    // 飛行時の風
+    P(2,45,"#d5e9f4",10,2);
+    P(3,53,"#d5e9f4",7,1);
+
+  }
+
+  if(mood==="scary") {
+
+    P(76,19,"#d92e34",7,3);
+    P(85,34,"#ffffff",3,4);
+
+  }
+
+  if(mood==="cute") {
+
+    P(76,19,"#ffffff",6,6);
+    P(78,20,"#29202c",2,3);
+
+    P(86,39,"#f29aa7",4,2);
+
+  }
+
+}
+
+
+// ==================================================
+// 5. リンゴ・食べ物
+// ==================================================
+
+function drawApple(x,y,s=1) {
+
+  const r=Math.max(1,Math.round(s));
+
+  P(x+5*r,y, "#347447",3*r,2*r);
+  P(x+7*r,y-2*r,"#39864c",4*r,2*r);
+
+  P(x+2*r,y+2*r,"#a52e36",13*r,12*r);
+  P(x,y+5*r,"#c63c42",17*r,8*r);
+  P(x+4*r,y+2*r,"#ec5b5b",8*r,10*r);
+  P(x+5*r,y+4*r,"#ff9290",3*r,3*r);
+
+  P(x+12*r,y+6*r,"#8b252c",3*r,5*r);
+
+}
+
+function drawBanana(x,y) {
+
+  P(x+5,y+4,"#f2d34f",15,4);
+  P(x+3,y+7,"#f2d34f",17,4);
+  P(x+5,y+11,"#d5a83a",12,3);
+  P(x+3,y+5,"#fff0a0",12,2);
+
+}
+
+function drawMeat(x,y) {
+
+  P(x,y+4,"#873c36",17,9);
+  P(x+2,y+2,"#c66b62",12,10);
+  P(x+5,y+4,"#f4c2a0",6,4);
+  P(x+17,y+5,"#e5dfd4",4,5);
+
+}
+
+
+// ==================================================
+// 6. 猫
+// ==================================================
+
+function drawCat(color="white",action="normal") {
+
+  const c=palette(color);
+
+  // 尻尾
+  P(14,67,c[0],5,22);
+  P(10,63,c[1],7,8);
+
+  // 胴体
+  P(24,54,c[0],45,31);
+  P(28,52,c[1],35,29);
+  P(35,61,c[2],20,15);
+
+  // 頭
+  P(23,24,c[0],46,34);
+  P(27,22,c[1],38,32);
 
   // 耳
-  rect(19,15,5,7,p.dark);
-  rect(32,15,5,7,p.dark);
-  px(21,18,p.light);
-  px(34,18,p.light);
+  P(23,12,c[0],14,21);
+  P(27,16,"#d58b9d",6,11);
+  P(54,12,c[0],14,21);
+  P(58,16,"#d58b9d",6,11);
 
   // 目
-  px(24,25,C.black);
-  px(32,25,C.black);
+  P(33,35,"#ffffff",9,8);
+  P(54,35,"#ffffff",9,8);
+  P(37,36,"#252d34",3,7);
+  P(58,36,"#252d34",3,7);
 
   // 鼻
-  px(28,28,C.red);
+  P(45,45,"#d66b88",5,3);
+
+  // 口
+  line(47,48,45,51,"#3a2730");
+  line(47,48,50,51,"#3a2730");
+
+  // ひげ
+  line(28,45,40,47,c[3]);
+  line(28,49,39,49,c[3]);
+  line(53,47,65,45,c[3]);
+  line(53,49,66,50,c[3]);
 
   // 足
-  rect(21,45,5,6,p.dark);
-  rect(31,45,5,6,p.dark);
-  rect(21,48,5,2,p.main);
-  rect(31,48,5,2,p.main);
+  P(28,80,c[0],11,15);
+  P(52,80,c[0],11,15);
+
+  if(action==="eat") {
+    drawApple(62,59,.6);
+  }
+
 }
 
-// ==========================================
-// 7. 人物描画
-// ==========================================
 
-function drawPerson(colorName="blue") {
+// ==================================================
+// 7. 犬・狼
+// ==================================================
 
-  const p=palettes[colorName] || palettes.blue;
+function drawDog(color="brown") {
 
-  // 髪
-  rect(22,15,18,12,C.brownDark);
+  const c=palette(color);
 
-  // 顔
-  rect(24,19,13,13,C.skin);
+  // 尻尾
+  P(11,58,c[0],7,20);
+  P(8,53,c[1],7,8);
 
-  // 髪の装飾
-  rect(22,16,5,12,C.brown);
-  rect(35,16,5,12,C.brownDark);
+  // 胴体
+  P(24,48,c[0],47,39);
+  P(28,46,c[1],38,36);
+  P(39,57,c[2],18,17);
+
+  // 頭
+  P(25,21,c[0],43,34);
+  P(29,19,c[1],35,32);
+
+  // 耳
+  P(21,17,c[0],10,24);
+  P(61,17,c[0],10,24);
 
   // 目
-  px(27,24,C.black);
-  px(34,24,C.black);
+  P(36,33,"#ffffff",7,7);
+  P(54,33,"#ffffff",7,7);
+  P(39,34,"#242a32",3,5);
+  P(57,34,"#242a32",3,5);
 
-  // 体
-  rect(20,32,20,15,p.dark);
-  rect(22,32,16,13,p.main);
-  rect(26,34,8,9,p.light);
+  // 鼻
+  P(45,44,"#27252b",9,7);
+  P(48,45,"#ffffff",2,2);
 
-  // 腕
-  rect(17,34,4,11,C.skin);
-  rect(39,34,4,11,C.skin);
+  // 口
+  P(43,52,"#50333a",12,3);
 
   // 足
-  rect(23,46,6,8,C.dark);
-  rect(32,46,6,8,C.dark);
+  P(28,79,c[0],12,17);
+  P(54,79,c[0],12,17);
+
+}
+
+function drawWolf(color="gray") {
+
+  drawDog(color);
+
+  const c=palette(color);
+
+  // 狼の耳を鋭くする
+  P(22,10,c[0],8,15);
+  P(62,10,c[0],8,15);
+
+  // 毛並み
+  P(27,25,c[3],5,3);
+  P(37,19,c[3],4,3);
+  P(55,24,c[3],5,3);
+  P(35,64,c[3],5,2);
+
+}
+
+
+// ==================================================
+// 8. 人物
+// ==================================================
+
+function drawPerson(color="blue",action="normal") {
+
+  const c=palette(color);
+
+  // 髪
+  P(39,12,"#493126",34,22);
+  P(34,18,"#493126",8,18);
+
+  // 顔
+  P(39,20,COLOR_SKIN(),28,28);
+
+  // 髪の前髪
+  P(39,17,"#68432f",27,7);
+
+  // 目
+  P(44,32,"#ffffff",5,5);
+  P(57,32,"#ffffff",5,5);
+  P(46,33,"#262b35",2,3);
+  P(59,33,"#262b35",2,3);
+
+  // 鼻
+  P(52,39,"#d29a79",3,3);
+
+  // 服
+  P(29,49,c[0],48,34);
+  P(34,48,c[1],37,29);
+  P(45,53,c[2],14,20);
+
+  // 腕
+  P(24,52,COLOR_SKIN(),10,28);
+  P(72,52,COLOR_SKIN(),10,28);
+
+  // 足
+  P(37,81,"#34405a",16,22);
+  P(56,81,"#34405a",16,22);
 
   // 靴
-  rect(21,53,8,3,C.brownDark);
-  rect(31,53,8,3,C.brownDark);
+  P(32,101,"#49352d",23,6);
+  P(55,101,"#49352d",22,6);
+
+  if(action==="hold") {
+    P(78,49,"#d6b45e",5,32);
+  }
+
 }
 
-// ==========================================
-// 8. 木・城・剣
-// ==========================================
-
-function drawTree() {
-
-  rect(9,28,8,23,C.brownDark);
-  rect(11,28,5,20,C.brown);
-
-  rect(3,15,21,18,C.greenDark);
-  rect(5,12,17,19,C.green);
-  rect(9,9,11,10,C.greenLight);
-
-  px(9,16,C.greenLight);
-  px(17,13,C.greenLight);
-  px(7,23,C.greenLight);
+function COLOR_SKIN() {
+  return "#eebc94";
 }
+
+
+// ==================================================
+// 9. 鳥・魚
+// ==================================================
+
+function drawBird(color="blue") {
+
+  const c=palette(color);
+
+  P(27,43,c[0],48,26);
+  P(33,39,c[1],36,24);
+
+  // 翼
+  P(36,32,c[0],28,24);
+  P(38,34,c[2],22,12);
+  line(38,35,59,52,c[3]);
+
+  // 尾
+  P(18,51,c[0],15,7);
+  P(10,48,c[1],12,4);
+  P(10,55,c[1],12,4);
+
+  // 頭
+  P(62,30,c[0],24,25);
+  P(65,28,c[1],18,23);
+
+  // 目
+  P(76,36,"#ffffff",5,5);
+  P(78,37,"#222222",2,3);
+
+  // くちばし
+  P(84,40,"#e8a940",10,5);
+
+  // 足
+  P(48,68,"#c68a40",3,9);
+  P(63,68,"#c68a40",3,9);
+
+}
+
+function drawFish(color="blue") {
+
+  const c=palette(color);
+
+  // 尾
+  P(13,48,c[0],16,22);
+  P(5,44,c[1],12,13);
+  P(5,61,c[1],12,13);
+
+  // 胴体
+  P(25,40,c[0],65,35);
+  P(30,37,c[1],52,34);
+  P(40,43,c[2],35,21);
+
+  // 背びれ
+  P(46,31,c[0],22,9);
+  P(53,26,c[1],9,7);
+
+  // 胸びれ
+  P(52,68,c[0],16,10);
+  P(56,71,c[2],8,6);
+
+  // 目
+  P(80,48,"#ffffff",8,8);
+  P(83,50,"#222222",3,4);
+
+  // 鱗
+  for(let i=0;i<10;i++) {
+    P(37+(i%5)*9,47+Math.floor(i/5)*12,c[3],2,3);
+  }
+
+}
+
+
+// ==================================================
+// 10. 道具
+// ==================================================
 
 function drawSword() {
 
-  rect(30,12,3,30,C.gray);
-  rect(31,12,1,25,C.grayLight);
-  rect(25,37,13,3,C.gold);
-  rect(30,40,4,8,C.brownDark);
-  px(31,11,C.white);
+  P(57,14,"#8797a5",9,67);
+  P(59,14,"#e3edf1",3,63);
+
+  P(46,73,"#d9b85d",31,7);
+  P(57,80,"#75452f",9,25);
+  P(54,103,"#b68a45",15,5);
+
+}
+
+function drawShield() {
+
+  P(38,26,"#704b31",34,48);
+  P(42,29,"#b48c51",26,41);
+  P(46,33,"#e0c17b",18,31);
+  P(53,38,"#ffffff",5,18);
+  P(47,44,"#ffffff",17,5);
+
+}
+
+function drawStaff() {
+
+  P(58,14,"#80532f",6,84);
+  P(52,8,"#e1b950",18,18);
+  P(56,12,"#a6d9fa",10,10);
+  P(60,15,"#ffffff",3,3);
+
+}
+
+function drawWateringCan() {
+
+  P(30,43,"#748a9e",43,33);
+  P(34,47,"#a3b7c5",35,24);
+  P(70,51,"#748a9e",22,7);
+  P(87,54,"#a3b7c5",9,4);
+
+  P(40,47,"#4e83a5",24,15);
+
+  // 持ち手
+  P(38,33,"#a3b7c5",7,16);
+  P(35,31,"#a3b7c5",13,5);
+
+  // 水滴
+  P(94,63,"#64bde8",3,5);
+  P(97,71,"#64bde8",2,4);
+
+}
+
+
+// ==================================================
+// 11. 自然・建物
+// ==================================================
+
+function drawTree() {
+
+  P(53,42,"#65432f",18,52);
+  P(22,22,"#244d34",77,42);
+  P(29,13,"#33734a",61,44);
+  P(42,6,"#4c9856",38,36);
+
+  P(36,24,"#79b85c",13,11);
+  P(70,17,"#79b85c",11,12);
+  P(48,9,"#91c86c",12,10);
+
+}
+
+function drawFlower() {
+
+  P(60,53,"#38834b",7,43);
+  P(46,72,"#38834b",17,7);
+  P(66,80,"#38834b",17,7);
+
+  P(43,31,"#df7eae",18,18);
+  P(55,22,"#e8a3c4",18,18);
+  P(68,31,"#df7eae",18,18);
+  P(55,42,"#e8a3c4",18,17);
+
+  P(56,32,"#f4d35e",13,13);
+
+}
+
+function drawMushroom() {
+
+  P(48,52,"#e8d5b5",24,39);
+  P(32,44,"#b84948",55,16);
+  P(40,36,"#df6660",38,12);
+  P(47,47,"#ffffff",7,5);
+  P(68,48,"#ffffff",6,4);
+  P(56,41,"#ffffff",5,4);
+
 }
 
 function drawCastle() {
 
-  rect(9,25,46,28,C.gray);
-  rect(7,19,10,34,C.grayDark);
-  rect(47,19,10,34,C.grayDark);
+  P(13,46,"#64748a",102,51);
 
-  rect(6,16,12,5,C.gray);
-  rect(46,16,12,5,C.gray);
+  P(9,30,"#8b9cad",25,68);
+  P(94,30,"#8b9cad",25,68);
 
-  rect(19,15,25,38,C.gray);
-  rect(25,39,12,14,C.dark);
+  P(31,23,"#8295a7",65,75);
+
+  // 塔
+  P(8,22,"#a9b8c6",27,10);
+  P(94,22,"#a9b8c6",27,10);
+
+  // 屋根
+  P(7,14,"#8d4b49",29,9);
+  P(93,14,"#8d4b49",29,9);
+  P(34,17,"#8d4b49",58,9);
 
   // 窓
-  rect(12,27,3,6,C.black);
-  rect(49,27,3,6,C.black);
-  rect(28,23,5,6,C.black);
-}
+  P(17,43,"#27384b",9,14);
+  P(103,43,"#27384b",9,14);
+  P(55,36,"#27384b",14,18);
 
-// ==========================================
-// 9. シーン構築
-// ==========================================
+  // 扉
+  P(53,73,"#46372d",23,24);
+  P(62,83,"#c7a14d",3,3);
 
-function renderScene(data) {
-
-  drawBackground();
-
-  const subject = data.subject;
-  const object = data.object;
-  const action = data.verb;
-  const color = data.color || "green";
-
-  if(!subject) {
-    // 認識可能な対象がない場合
-    drawTree();
-    return;
+  // 石の模様
+  for(let i=0;i<10;i++) {
+    P(17+(i*13)%90,58+(i*7)%29,"#a9b8c6",5,1);
   }
 
-  switch(subject.type) {
+}
+
+
+// ==================================================
+// 12. シーン構成
+// ==================================================
+
+function drawEntity(type,color,action,mood) {
+
+  switch(type) {
 
     case "dragon":
-
-      drawDragon(color,action);
-
-      if(object && object.type==="apple" && action!=="eat") {
-        drawApple(50,35,1);
-      }
-
+      drawDragon(color,action,mood);
       break;
 
     case "cat":
-      drawCat(color);
-      if(object && object.type==="apple") {
-        drawApple(46,36,1);
-      }
-      break;
-
-    case "person":
-      drawPerson(color);
-
-      if(object && object.type==="sword") {
-        drawSword();
-      } else if(object && object.type==="apple") {
-        drawApple(44,29,1);
-      }
-
-      break;
-
-    case "apple":
-      drawApple(27,27,2);
+      drawCat(color,action);
       break;
 
     case "dog":
-      drawCat(color);
+      drawDog(color);
+      break;
+
+    case "wolf":
+      drawWolf(color);
+      break;
+
+    case "person":
+      drawPerson(color,action);
+      break;
+
+    case "bird":
+      drawBird(color);
+      break;
+
+    case "fish":
+      drawFish(color);
+      break;
+
+    case "apple":
+      drawApple(40,42,2);
+      break;
+
+    case "banana":
+      drawBanana(40,45);
+      break;
+
+    case "meat":
+      drawMeat(40,45);
       break;
 
     case "sword":
       drawSword();
       break;
 
+    case "shield":
+      drawShield();
+      break;
+
+    case "staff":
+      drawStaff();
+      break;
+
+    case "watering":
+      drawWateringCan();
+      break;
+
     case "tree":
-    case "flower":
       drawTree();
+      break;
+
+    case "flower":
+      drawFlower();
+      break;
+
+    case "mushroom":
+      drawMushroom();
       break;
 
     case "castle":
@@ -725,81 +1286,248 @@ function renderScene(data) {
       drawCastle();
       break;
 
-    default:
-      drawTree();
+    case "mountain":
+      P(0,70,"#627a91",65,30);
+      P(43,53,"#8299ae",72,47);
+      P(47,52,"#e9eff1",17,12);
+      break;
+
+    case "moon":
+      P(42,20,"#f4e5a1",34,34);
+      P(55,15,"#a0a8c8",27,27);
+      break;
+
+    case "sun":
+      P(42,20,"#f5d36c",38,38);
+      P(51,29,"#fff0a0",19,19);
+      break;
+
+    case "star":
+      for(let i=0;i<5;i++) {
+        P(24+i*8,38-(i%2)*7,"#fff0a0",3,3);
+      }
+      break;
+
+    case "boat":
+      P(19,65,"#825333",85,14);
+      P(29,33,"#f4e5bc",3,34);
+      P(32,37,"#f7f1df",32,25);
+      P(65,37,"#d8d9dc",30,25);
+      break;
+
   }
 
-  // 追加要素
-  if(data.subjects.some(s=>s.type==="tree") &&
-     subject.type!=="tree") {
-    rect(3,38,5,11,C.brown);
-    rect(1,30,9,10,C.green);
+}
+
+function renderScene(data) {
+
+  drawBackground(data.background);
+
+  const entities=data.entities;
+
+  if(!entities.length) {
+    drawTree();
+    return;
   }
+
+  // 建物など背景向けの要素を先に描く
+  const backgroundTypes=["castle","house","mountain","tree"];
+
+  entities.filter(e=>backgroundTypes.includes(e.type))
+    .forEach(e=>{
+
+      ctx.save();
+      ctx.translate(0,0);
+      ctx.scale(1,1);
+
+      drawEntity(e.type,data.color,"normal","normal");
+
+      ctx.restore();
+
+    });
+
+  // 主体
+  const main=data.primary;
+
+  if(main) {
+
+    const secondary=entities.filter(e=>e!==main);
+
+    // 主体の大きさ
+    const scale=data.size;
+
+    ctx.save();
+
+    if(secondary.length) {
+
+      // 2体以上の場合は少し小さく配置
+      ctx.translate(12,24);
+      ctx.scale(.76,.76);
+
+    } else {
+
+      ctx.translate(0,0);
+      ctx.scale(scale,scale);
+
+    }
+
+    const action=main===data.primary ? data.action : "normal";
+
+    drawEntity(
+      main.type,
+      data.color || "green",
+      action,
+      data.mood
+    );
+
+    ctx.restore();
+
+    // 2体目以降
+    secondary
+      .filter(e=>!backgroundTypes.includes(e.type))
+      .slice(0,3)
+      .forEach((e,i)=>{
+
+        ctx.save();
+
+        ctx.translate(61+i*8,43+i*3);
+        ctx.scale(.52,.52);
+
+        drawEntity(
+          e.type,
+          data.color || "blue",
+          "normal",
+          "normal"
+        );
+
+        ctx.restore();
+
+      });
+
+  }
+
+  // 持つ・運ぶ動作に応じて道具を配置
+  if(data.action==="hold" || data.action==="carry") {
+
+    const tool=entities.find(e=>
+      ["sword","shield","staff","watering"].includes(e.type)
+    );
+
+    if(tool) {
+
+      ctx.save();
+      ctx.translate(0,0);
+      ctx.scale(.55,.55);
+      drawEntity(tool.type,"gold","normal","normal");
+      ctx.restore();
+
+    }
+
+  }
+
+  // 食べる対象
+  if(data.action==="eat" && data.target) {
+
+    const food=data.target.type;
+
+    ctx.save();
+    ctx.translate(75,43);
+    ctx.scale(.65,.65);
+
+    if(food==="apple") drawApple(0,0,1);
+    if(food==="banana") drawBanana(0,0);
+    if(food==="meat") drawMeat(0,0);
+
+    ctx.restore();
+
+  }
+
+  // 花や草など追加の背景要素
+  if(entities.some(e=>e.type==="flower") &&
+     main.type!=="flower") {
+
+    ctx.save();
+    ctx.translate(2,60);
+    ctx.scale(.45,.45);
+    drawFlower();
+    ctx.restore();
+
+  }
+
 }
 
 
-// ==========================================
-// 10. 生成処理
-// ==========================================
+// ==================================================
+// 13. 生成・解析結果
+// ==================================================
 
 function generate() {
 
   const text=document.getElementById("prompt").value.trim();
 
   if(!text) {
-    alert("言葉を入力してください。");
+    alert("描きたい内容を入力してください。");
     return;
   }
 
   const status=document.getElementById("status");
-  const analysis=document.getElementById("analysis");
+  const report=document.getElementById("analysis");
 
-  status.textContent="文章を解析しています...";
+  status.textContent="文章構造を解析中...";
 
-  // AI解析
   const data=AI.analyze(text);
 
-  status.textContent="シーンを設計しています...";
+  status.textContent="シーンの構図を設計中...";
 
-  // 描画
-  ctx.clearRect(0,0,64,64);
+  ctx.clearRect(0,0,128,128);
 
   renderScene(data);
 
-  // 結果表示
-  const subject=data.subject
-    ? data.subject.word+" ("+data.subject.type+")"
-    : "認識できませんでした";
+  const entityText=data.entities.length
+    ? data.entities.map(e=>e.word+" ["+e.type+"]").join(" / ")
+    : "認識できる要素なし";
 
-  const object=data.object
-    ? data.object.word+" ("+data.object.type+")"
-    : "なし";
-
-  const names={
+  const actionNames={
     eat:"食べる",
     hold:"持つ",
     fly:"飛ぶ",
     run:"走る",
+    walk:"歩く",
     sit:"座る",
     sleep:"眠る",
     swim:"泳ぐ",
     fight:"戦う",
-    walk:"歩く"
+    water:"水をあげる",
+    look:"見る",
+    carry:"運ぶ"
   };
 
-  analysis.innerHTML=
-    "<b>AI解析レポート</b><br>"+
-    "入力文章："+escapeHTML(text)+"<br>"+
-    "主体："+escapeHTML(subject)+"<br>"+
-    "対象："+escapeHTML(object)+"<br>"+
-    "動作："+(names[data.verb] || "指定なし")+"<br>"+
-    "色："+(data.color || "標準色")+"<br>"+
-    "認識要素："+data.subjects.map(s=>escapeHTML(s.word)).join(" / ");
+  const moodNames={
+    cute:"かわいい",
+    scary:"恐ろしい",
+    normal:"通常"
+  };
 
-  status.textContent="ドット絵の生成が完了しました。";
+  report.innerHTML=
+
+    "<b>AI解析レポート v3.0</b><br>"+
+    "入力文："+escapeHTML(text)+"<br>"+
+    "認識した要素："+entityText+"<br>"+
+    "主体："+(data.primary?.word || "不明")+"<br>"+
+    "対象："+(data.target?.word || "なし")+"<br>"+
+    "動作："+(actionNames[data.action] || "指定なし")+"<br>"+
+    "色："+(data.color || "標準色")+"<br>"+
+    "背景："+data.background+"<br>"+
+    "雰囲気："+moodNames[data.mood]+"<br>"+
+    "大きさ："+(data.size>1?"巨大":data.size<1?"小型":"通常")+"<br>"+
+    "解像度：128×128";
+
+  status.textContent="生成完了！";
+
 }
 
 function escapeHTML(str) {
+
   return str.replace(/[&<>"']/g,c=>({
     "&":"&amp;",
     "<":"&lt;",
@@ -807,27 +1535,44 @@ function escapeHTML(str) {
     '"':"&quot;",
     "'":"&#39;"
   })[c]);
+
 }
 
-// ==========================================
-// 11. PNG保存
-// ==========================================
+function example(text) {
+
+  document.getElementById("prompt").value=text;
+  generate();
+
+}
+
+function clearCanvas() {
+
+  ctx.clearRect(0,0,128,128);
+
+  document.getElementById("status").textContent="生成待機中...";
+  document.getElementById("analysis").textContent="AI解析エンジン：待機中";
+
+}
 
 function downloadImage() {
 
-  const a=document.createElement("a");
+  const link=document.createElement("a");
 
-  a.download="pixel-ai-v2.png";
-  a.href=canvas.toDataURL("image/png");
-  a.click();
+  link.download="pixel-ai-v3.png";
+  link.href=canvas.toDataURL("image/png");
+
+  link.click();
+
 }
 
-// Enterキー
 document.getElementById("prompt")
 .addEventListener("keydown",e=>{
+
   if(e.key==="Enter") generate();
+
 });
 
 </script>
+
 </body>
 </html>
